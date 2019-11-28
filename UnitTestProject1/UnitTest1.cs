@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
+﻿using System.Diagnostics;
 using Autofac;
 using Autofac.Extras.CommonServiceLocator;
 using CachedRepository;
-using Castle.Components.DictionaryAdapter.Xml;
 using CommonServiceLocator;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -17,8 +14,9 @@ namespace UnitTestProject1
         public void TestMethod1()
         {
             var builder = new ContainerBuilder();
-            builder.RegisterType<ConcreteRepository>().As<ConcreteRepository>();
-            builder.RegisterType<CashService>().As<CashService>();
+            builder.RegisterType<ConcreteRepository>().As<ConcreteRepository>().SingleInstance(); 
+            builder.RegisterType<CashService>().As<CashService>().SingleInstance(); 
+
             var container = builder.Build();
             var csl = new AutofacServiceLocator(container);
             ServiceLocator.SetLocatorProvider(() => csl);
@@ -36,25 +34,31 @@ namespace UnitTestProject1
             cashService.CurrentSession = new Session();
             cashService.CurrentSession.Add<ConcreteRepository>( nameof(ConcreteRepository.Get) );
 
-            // без кеша
+
+            Debug.WriteLine("без кеша"); 
             concreteRepository.Get("1");
-            // уже закешировано
+
+            Debug.WriteLine("Второй раз - по тому же параметру -уже должно быть закешировано");
             concreteRepository.Get("1");
 
-            // не закешированно, так как другие параметры
-            concreteRepository.Get("2");
-            // снова закешированно
+            Debug.WriteLine("не закешированно, так как другие параметры");
             concreteRepository.Get("2");
 
+            Debug.WriteLine("снова закешированно");
+            concreteRepository.Get("2");
 
-            // очистили от сесии, работаем без кеша
+            Debug.WriteLine("очистили от сесии, работаем без кеша");
             cashService.CurrentSession = new Session();
             concreteRepository.Get("1");
-            // добавили кеширование,
+
+            Debug.WriteLine("добавили кеширование");
             cashService.CurrentSession.Add<ConcreteRepository>(nameof(ConcreteRepository.Get));
-            // попытка получания записывает в кеш
+
+            
+            Debug.WriteLine("попытка получания записывает в кеш");
             concreteRepository.Get("1");
-            // прочитали из кеша
+
+            Debug.WriteLine("прочитали из кеша");
             concreteRepository.Get("1");
         }
     }
