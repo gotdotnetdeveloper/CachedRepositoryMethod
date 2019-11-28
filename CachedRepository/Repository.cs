@@ -14,35 +14,54 @@ namespace CachedRepository
     /// </summary>
     public class Repository : IRepository
     {
-        Hashtable hash = new Hashtable();
+        private CashService _cashService;
 
-        /// <summary>
-        /// </summary>
-        public bool TryGetFromCach( object[] parameterList , out object o ,  string repositoryMethodName )
+        public Repository(CashService cashService )
         {
-            o = null;
-
-            var hashCide = GetHashCodeByParameters(parameterList, repositoryMethodName);
-
-            if (!hash.ContainsKey(hashCide))
-                return false;
-         
-            o = hash[hashCide];
-            return true;
+            _cashService = cashService;
         }
 
         /// <summary>
-        /// 
+        /// Получение набора данных синхронно
         /// </summary>
+        public bool TryGetFromCach<T>(object[] parameterList, out T o, string repositoryMethodName)
+        where T:class
+        {
+            o = null;
+
+            if (_cashService.CurrentSession != null)
+            {
+
+                var firstOrDefault = _cashService.CurrentSession.RepositoryMethodList.FirstOrDefault(x =>
+                    x.MethodName == repositoryMethodName && x.RepositoryType == this.GetType());
+                if (firstOrDefault != null)
+                {
+                    var hashCide = GetHashCodeByParameters(parameterList, repositoryMethodName);
+
+                    if (!firstOrDefault.Cash.ContainsKey(hashCide))
+                        return false;
+
+                    o = (T) firstOrDefault.Cash[hashCide];
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Установить кеш
+        /// </summary>
+        /// <param name="firstOrDefault"></param>
         /// <param name="parameterList"></param>
         /// <param name="o"></param>
         /// <param name="repositoryMethodName"></param>
         /// <returns></returns>
-        public void SetCach(object[] parameterList, object o,  string repositoryMethodName )
+        public void SetCach(RepositoryMethod firstOrDefault, object[] parameterList, object o,
+            string repositoryMethodName)
         {
             var hashCide = GetHashCodeByParameters(parameterList, repositoryMethodName);
-
-             hash[hashCide] = o;
+            firstOrDefault.Cash[hashCide] = o;
         }
 
 
@@ -71,6 +90,86 @@ namespace CachedRepository
             return tmp;
         }
 
+        /// <summary>
+        /// Обработать асинхронный таск
+        /// </summary>
+        /// <param name="getTask"></param>
+        /// <param name="parameter"></param>
+        /// <param name="repositoryMethodName"></param>
+        /// <returns></returns>
+        public Task<T> GetCashedTask<T>(Func<Task<T>> getTask, object[] parameter,
+            [CallerMemberName] string repositoryMethodName = null) where T : class
+        {
+            if (_cashService.CurrentSession != null)
+            {
 
+                var firstOrDefault = _cashService.CurrentSession.RepositoryMethodList.FirstOrDefault(x =>
+                    x.MethodName == repositoryMethodName && x.RepositoryType == this.GetType());
+                if (firstOrDefault != null)
+                {
+                    if (TryGetFromCach<T>(new object[] {parameter}, out var returnValue, repositoryMethodName))
+                    {
+                        return Task.FromResult<T>(returnValue);
+                    }
+
+                    var task = getTask.Invoke();
+
+                    task.ContinueWith(t =>
+                    {
+                        SetCach(firstOrDefault, new object[] {parameter}, t.Result, repositoryMethodName);
+                    });
+
+                    return task;
+                }
+                else
+                {
+                    return getTask.Invoke();
+                }
+
+            }
+            else
+            {
+                return getTask.Invoke();
+            }
+
+        }
+
+
+        /// <summary>
+        /// Обработать с кешированием функцию.
+        /// </summary>
+        /// <param name="getMetoDelegate"></param>
+        /// <param name="parameter"></param>
+        /// <param name="repositoryMethodName"></param>
+        /// <returns></returns>
+        public object GetCashed(Func<object[], object> getMetoDelegate, object[] parameter,
+            [CallerMemberName] string repositoryMethodName = null)
+        {
+
+            if (_cashService.CurrentSession != null)
+            {
+
+                var firstOrDefault = _cashService.CurrentSession.RepositoryMethodList.FirstOrDefault(x =>
+                    x.MethodName == repositoryMethodName && x.RepositoryType == this.GetType());
+                if (firstOrDefault != null)
+                {
+                    object returnValue = null;
+                    if (TryGetFromCach<object>(new[] {parameter}, out returnValue, repositoryMethodName))
+                    {
+                        return returnValue;
+                    }
+
+                    returnValue = getMetoDelegate.Invoke(parameter);
+                    SetCach(firstOrDefault,new[] {parameter}, returnValue, repositoryMethodName);
+                    return returnValue;
+                }
+
+                return getMetoDelegate.Invoke(parameter);
+            }
+            else
+            {
+                return getMetoDelegate.Invoke(parameter);
+            }
+        }
     }
 }
