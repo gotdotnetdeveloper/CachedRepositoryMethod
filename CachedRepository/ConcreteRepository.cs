@@ -10,6 +10,7 @@ namespace CachedRepository
     /// </summary>
     public class ConcreteRepository : Repository 
     {
+       
         /// <summary>
         /// Конструктор.
         /// </summary>
@@ -24,7 +25,7 @@ namespace CachedRepository
         /// <returns></returns>
         public IEnumerable<Model> Get(string parameter)
         {
-            return GetCashed(arg =>
+            return _cashService.GetCashed(arg =>
             {
                 #region Получение данных из БД
                 if (string.IsNullOrEmpty(parameter))
@@ -39,13 +40,13 @@ namespace CachedRepository
                 }
                 #endregion
                 return newItem;
-            }, new object[] { parameter }) as IEnumerable<Model>;
+            }, new object[] { parameter },this) as IEnumerable<Model>;
         }
 
 
         public Task<Model> GetAsincCashed(string parameter)
         {
-            var x= GetCashedTask<Model>(
+            var x= _cashService.GetCashedTask<Model>(
                 () =>
                 {
                     var tmp = parameter;
@@ -53,7 +54,7 @@ namespace CachedRepository
                      Task<Model> t = new Task<Model>(wrewew);
                      return t;
                 }
-                , new object[] {parameter});
+                , new object[] {parameter},this);
 
             return x;
         }

@@ -33,7 +33,7 @@ namespace UnitTestProject1
              */
             cashService.CurrentSession = new Session();
             cashService.CurrentSession.Add<ConcreteRepository>( nameof(ConcreteRepository.Get) );
-          //  cashService.CurrentSession.Add<ConcreteRepository>( nameof(ConcreteRepository.GetAsincCashed) );
+           cashService.CurrentSession.Add<ConcreteRepository>( nameof(ConcreteRepository.GetAsincCashed) );
 
 
             Debug.WriteLine("без кеша"); 
