@@ -21,7 +21,7 @@ namespace CachedRepository
         /// <summary>
         /// Получение набора данных синхронно
         /// </summary>
-        public bool TryGetFromCach<T>(object[] parameterList, out T o, string repositoryMethodName)
+        public bool TryGetFromCach<T>(object[] parameterList, out T o, string repositoryMethodName, Type repositoryType)
         where T:class
         {
             o = null;
@@ -29,13 +29,13 @@ namespace CachedRepository
             if (_cashService.CurrentSession != null)
             {
                 var firstOrDefault = _cashService.CurrentSession.RepositoryMethodList.FirstOrDefault(x =>
-                    x.MethodName == repositoryMethodName && x.RepositoryType == GetType());
+                    x.MethodName == repositoryMethodName && x.RepositoryType == repositoryType);
                 if (firstOrDefault != null)
                 {
                     var hashCode = GetHashCodeByParameters(parameterList, repositoryMethodName);
                     if (!firstOrDefault.Cash.ContainsKey(hashCode))
                     {
-                        Debug.WriteLine($"не найден ключ {hashCode} для отслеживаниея метода {repositoryMethodName} типа {GetType()}");
+                        Debug.WriteLine($"не найден ключ {hashCode} для отслеживаниея метода {repositoryMethodName} типа {repositoryType}");
                         return false;
                     }
                         
@@ -50,7 +50,7 @@ namespace CachedRepository
                 }
             }
 
-            Debug.WriteLine($"сессия не инициализированна {repositoryMethodName} типа {GetType()}");
+            Debug.WriteLine($"сессия не инициализированна {repositoryMethodName} типа {repositoryType}");
             return false;
         }
 
@@ -108,19 +108,20 @@ namespace CachedRepository
         /// </summary>
         /// <param name="getTask"></param>
         /// <param name="parameter"></param>
+        /// <param name="repositoryType"></param>
         /// <param name="repositoryMethodName"></param>
         /// <returns></returns>
-        public Task<T> GetCashedTask<T>(Func<Task<T>> getTask, object[] parameter,
+        public Task<T> GetCashedTask<T>(Func<Task<T>> getTask, object[] parameter, Type repositoryType,
             [CallerMemberName] string repositoryMethodName = null) where T : class
         {
             if (_cashService.CurrentSession != null)
             {
 
                 var firstOrDefault = _cashService.CurrentSession.RepositoryMethodList.FirstOrDefault(x =>
-                    x.MethodName == repositoryMethodName && x.RepositoryType == GetType());
+                    x.MethodName == repositoryMethodName && x.RepositoryType == repositoryType);
                 if (firstOrDefault != null)
                 {
-                    if (TryGetFromCach<T>(new Array[] {parameter}, out var returnValue, repositoryMethodName))
+                    if (TryGetFromCach<T>(parameter, out var returnValue, repositoryMethodName, repositoryType))
                     {
                         return Task.FromResult(returnValue);
                     }
@@ -129,7 +130,7 @@ namespace CachedRepository
 
                     task.ContinueWith(t =>
                     {
-                        SetCach(firstOrDefault, new Array[] {parameter}, t.Result, repositoryMethodName);
+                        SetCach(firstOrDefault, parameter, t.Result, repositoryMethodName);
                     });
 
                     return task;
@@ -153,17 +154,18 @@ namespace CachedRepository
         /// </summary>
         /// <param name="getMetoDelegate"></param>
         /// <param name="parameter"></param>
+        /// <param name="repositoryType"></param>
         /// <param name="repositoryMethodName"></param>
         /// <returns></returns>
-        public object GetCashed(Func<object[], object> getMetoDelegate, object[] parameter,
+        public object GetCashed(Func<object[], object> getMetoDelegate, object[] parameter, Type repositoryType,
             [CallerMemberName] string repositoryMethodName = null)
         {
             if (_cashService.CurrentSession != null)
             {
-                var firstOrDefault = _cashService.CurrentSession.RepositoryMethodList.FirstOrDefault(x => x.MethodName == repositoryMethodName && x.RepositoryType == GetType());
+                var firstOrDefault = _cashService.CurrentSession.RepositoryMethodList.FirstOrDefault(x => x.MethodName == repositoryMethodName && x.RepositoryType == repositoryType);
                 if (firstOrDefault != null)
                 {
-                    if (TryGetFromCach(parameter, out object returnValue, repositoryMethodName))
+                    if (TryGetFromCach(parameter, out object returnValue, repositoryMethodName, repositoryType))
                     {
                         
                         return returnValue;
