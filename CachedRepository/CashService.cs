@@ -291,7 +291,7 @@ namespace CachedRepository
             if (repositoryMethod == null)
                 return false;
 
-            return (repositoryMethod.RepositoryType == this.RepositoryType) 
+            return (repositoryMethod.RepositoryType == RepositoryType) 
                    && (string.Compare(repositoryMethod.MethodName, this.MethodName
                            ,CultureInfo.InvariantCulture, CompareOptions.None) == 0 ) ;
         }
