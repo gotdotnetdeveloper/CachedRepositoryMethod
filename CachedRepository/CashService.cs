@@ -105,13 +105,13 @@ namespace CachedRepository
         }
 
         /// <summary>
-        /// Обработать асинхронный таск
+        /// Обработать асинхронный таск.
         /// </summary>
-        /// <param name="getTask"></param>
-        /// <param name="parameter"></param>
-        /// <param name="repository"></param>
-        /// <param name="repositoryMethodName"></param>
-        /// <returns></returns>
+        /// <param name="getTask">Ссылка на метод, содержащий типизированный таск.</param>
+        /// <param name="parameter">Массив параметров метода.</param>
+        /// <param name="repository">Репозиторий.</param>
+        /// <param name="repositoryMethodName">Имя метода репозитория.</param>
+        /// <returns>Таск типизированный.</returns>
         public Task<T> GetCashedTask<T>(Func<Task<T>> getTask, object[] parameter, IRepository repository,
             [CallerMemberName] string repositoryMethodName = null) where T : class
         {
@@ -151,13 +151,13 @@ namespace CachedRepository
 
 
         /// <summary>
-        /// Обработать с кешированием метод.
+        /// Вернуть значение синхронного метода с кешированием.
         /// </summary>
-        /// <param name="getMetoDelegate"></param>
-        /// <param name="parameter"></param>
-        /// <param name="repository"></param>
-        /// <param name="repositoryMethodName"></param>
-        /// <returns></returns>
+        /// <param name="getMetoDelegate">Ссылка на метод, содержащий типизированный метод.</param>
+        /// <param name="parameter">Массив параметров метода.</param>
+        /// <param name="repository">Репозиторий.</param>
+        /// <param name="repositoryMethodName">Имя метода репозитория.</param>
+        /// <returns>Результат метода репозитория.</returns>
         public object GetCashed(Func<object[], object> getMetoDelegate, object[] parameter, IRepository repository,
             [CallerMemberName] string repositoryMethodName = null)
         {
